@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, Building2 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -21,145 +21,171 @@ import DataBackup from './components/DataBackup';
 import { AppView, Project, Worker, Bill, KharchiEntry, AdvanceEntry, ClientPayment, PurchaseEntry, ExecutionLevel, WorkerPayment as WorkerPaymentType, MessEntry } from './types';
 import { MOCK_PROJECTS, MOCK_RESOURCES, MOCK_WORKERS, MOCK_BILLS, MOCK_KHARCHI, MOCK_ADVANCES, MOCK_CLIENT_PAYMENTS, MOCK_PURCHASES, MOCK_EXECUTION, MOCK_MESS_ENTRIES } from './constants';
 
+// Custom Hook for Local Storage Persistence
+function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch (error) {
+      console.error(`Error saving localStorage key "${key}":`, error);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+}
+
 function App() {
-  // Auth State
+  // Auth State (Session based, resets on refresh which is fine for security)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // State for data management
-  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
-  const [workers, setWorkers] = useState<Worker[]>(MOCK_WORKERS);
-  const [bills, setBills] = useState<Bill[]>(MOCK_BILLS);
-  const [clientPayments, setClientPayments] = useState<ClientPayment[]>(MOCK_CLIENT_PAYMENTS);
-  const [kharchi, setKharchi] = useState<KharchiEntry[]>(MOCK_KHARCHI);
-  const [advances, setAdvances] = useState<AdvanceEntry[]>(MOCK_ADVANCES);
-  const [purchases, setPurchases] = useState<PurchaseEntry[]>(MOCK_PURCHASES);
-  const [executionData, setExecutionData] = useState<ExecutionLevel[]>(MOCK_EXECUTION);
-  const [messEntries, setMessEntries] = useState<MessEntry[]>(MOCK_MESS_ENTRIES);
-  const [workerPayments, setWorkerPayments] = useState<WorkerPaymentType[]>([]);
+  // State for data management - NOW PERSISTENT
+  const [projects, setProjects] = usePersistentState<Project[]>('sn_projects', MOCK_PROJECTS);
+  const [workers, setWorkers] = usePersistentState<Worker[]>('sn_workers', MOCK_WORKERS);
+  const [bills, setBills] = usePersistentState<Bill[]>('sn_bills', MOCK_BILLS);
+  const [clientPayments, setClientPayments] = usePersistentState<ClientPayment[]>('sn_client_payments', MOCK_CLIENT_PAYMENTS);
+  const [kharchi, setKharchi] = usePersistentState<KharchiEntry[]>('sn_kharchi', MOCK_KHARCHI);
+  const [advances, setAdvances] = usePersistentState<AdvanceEntry[]>('sn_advances', MOCK_ADVANCES);
+  const [purchases, setPurchases] = usePersistentState<PurchaseEntry[]>('sn_purchases', MOCK_PURCHASES);
+  const [executionData, setExecutionData] = usePersistentState<ExecutionLevel[]>('sn_execution', MOCK_EXECUTION);
+  const [messEntries, setMessEntries] = usePersistentState<MessEntry[]>('sn_mess', MOCK_MESS_ENTRIES);
+  const [workerPayments, setWorkerPayments] = usePersistentState<WorkerPaymentType[]>('sn_worker_payments', []);
 
   // --- Add Handlers ---
   const handleAddProject = (newProject: Project) => {
-    setProjects([...projects, newProject]);
+    setProjects(prev => [...prev, newProject]);
   };
 
   const handleAddWorker = (newWorker: Worker) => {
-    setWorkers([...workers, newWorker]);
+    setWorkers(prev => [...prev, newWorker]);
   };
 
   const handleAddBill = (newBill: Bill) => {
-    setBills([...bills, newBill]);
+    setBills(prev => [...prev, newBill]);
   };
 
   const handleAddClientPayment = (newPayment: ClientPayment) => {
-    setClientPayments([...clientPayments, newPayment]);
+    setClientPayments(prev => [...prev, newPayment]);
   };
 
   const handleAddAdvance = (newAdvance: AdvanceEntry) => {
-    setAdvances([...advances, newAdvance]);
+    setAdvances(prev => [...prev, newAdvance]);
   };
 
   const handleAddPurchase = (newPurchase: PurchaseEntry) => {
-    setPurchases([...purchases, newPurchase]);
+    setPurchases(prev => [...prev, newPurchase]);
   };
   
   const handleAddExecution = (newExecution: ExecutionLevel) => {
-    setExecutionData([...executionData, newExecution]);
+    setExecutionData(prev => [...prev, newExecution]);
   };
 
   const handleAddMess = (newMess: MessEntry) => {
-    setMessEntries([...messEntries, newMess]);
+    setMessEntries(prev => [...prev, newMess]);
   };
 
   // --- Edit Handlers ---
   const handleEditProject = (updatedProject: Project) => {
-    setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
   };
 
   const handleEditWorker = (updatedWorker: Worker) => {
-    setWorkers(workers.map(w => w.id === updatedWorker.id ? updatedWorker : w));
+    setWorkers(prev => prev.map(w => w.id === updatedWorker.id ? updatedWorker : w));
   };
 
   const handleEditBill = (updatedBill: Bill) => {
-    setBills(bills.map(b => b.id === updatedBill.id ? updatedBill : b));
+    setBills(prev => prev.map(b => b.id === updatedBill.id ? updatedBill : b));
   };
 
   const handleEditClientPayment = (updatedPayment: ClientPayment) => {
-    setClientPayments(clientPayments.map(p => p.id === updatedPayment.id ? updatedPayment : p));
+    setClientPayments(prev => prev.map(p => p.id === updatedPayment.id ? updatedPayment : p));
   };
 
   const handleEditAdvance = (updatedAdvance: AdvanceEntry) => {
-    setAdvances(advances.map(a => a.id === updatedAdvance.id ? updatedAdvance : a));
+    setAdvances(prev => prev.map(a => a.id === updatedAdvance.id ? updatedAdvance : a));
   };
 
   const handleEditPurchase = (updatedPurchase: PurchaseEntry) => {
-    setPurchases(purchases.map(p => p.id === updatedPurchase.id ? updatedPurchase : p));
+    setPurchases(prev => prev.map(p => p.id === updatedPurchase.id ? updatedPurchase : p));
   };
   
   const handleUpdateExecution = (updatedEntry: ExecutionLevel) => {
-    setExecutionData(executionData.map(e => e.id === updatedEntry.id ? updatedEntry : e));
+    setExecutionData(prev => prev.map(e => e.id === updatedEntry.id ? updatedEntry : e));
   };
 
   const handleEditMess = (updatedMess: MessEntry) => {
-    setMessEntries(messEntries.map(m => m.id === updatedMess.id ? updatedMess : m));
+    setMessEntries(prev => prev.map(m => m.id === updatedMess.id ? updatedMess : m));
   };
 
   // --- Delete Handlers ---
   const handleDeleteProject = (id: string) => {
-    setProjects(projects.filter(p => p.id !== id));
+    setProjects(prev => prev.filter(p => p.id !== id));
   };
 
   const handleDeleteWorker = (id: string) => {
-    setWorkers(workers.filter(w => w.id !== id));
+    setWorkers(prev => prev.filter(w => w.id !== id));
   };
 
   const handleDeleteBill = (id: string) => {
-    setBills(bills.filter(b => b.id !== id));
+    setBills(prev => prev.filter(b => b.id !== id));
   };
 
   const handleDeleteClientPayment = (id: string) => {
-    setClientPayments(clientPayments.filter(p => p.id !== id));
+    setClientPayments(prev => prev.filter(p => p.id !== id));
   };
 
   const handleDeleteAdvance = (id: string) => {
-    setAdvances(advances.filter(a => a.id !== id));
+    setAdvances(prev => prev.filter(a => a.id !== id));
   };
 
   const handleDeletePurchase = (id: string) => {
-    setPurchases(purchases.filter(p => p.id !== id));
+    setPurchases(prev => prev.filter(p => p.id !== id));
   };
   
   const handleDeleteExecution = (id: string) => {
-    setExecutionData(executionData.filter(e => e.id !== id));
+    setExecutionData(prev => prev.filter(e => e.id !== id));
   };
 
   const handleDeleteMess = (id: string) => {
-    setMessEntries(messEntries.filter(m => m.id !== id));
+    setMessEntries(prev => prev.filter(m => m.id !== id));
   };
 
   const handleUpdateKharchi = (entries: KharchiEntry[]) => {
-    // Merge logic: Remove old entries for specific worker/date combos if they exist, then add new ones
-    // For simplicity in this demo, we just push new ones or replace exact ID matches
-    const newKharchi = [...kharchi];
-    entries.forEach(entry => {
-      const index = newKharchi.findIndex(k => k.workerId === entry.workerId && k.date === entry.date);
-      if (index >= 0) {
-        newKharchi[index] = entry;
-      } else {
-        newKharchi.push(entry);
-      }
+    setKharchi(prev => {
+        // Create a map of existing entries for easier lookup/replacement
+        const newKharchi = [...prev];
+        entries.forEach(entry => {
+          const index = newKharchi.findIndex(k => k.workerId === entry.workerId && k.date === entry.date);
+          if (index >= 0) {
+            newKharchi[index] = entry;
+          } else {
+            newKharchi.push(entry);
+          }
+        });
+        return newKharchi;
     });
-    setKharchi(newKharchi);
   };
 
   const handleSaveWorkerPayments = (records: WorkerPaymentType[]) => {
-      // Filter out old records for the same month/project to prevent duplicates if saving again
-      const filtered = workerPayments.filter(wp => 
-          !records.some(r => r.workerId === wp.workerId && r.month === wp.month)
-      );
-      setWorkerPayments([...filtered, ...records]);
+      setWorkerPayments(prev => {
+          // Filter out old records for the same month/project to prevent duplicates if saving again
+          const filtered = prev.filter(wp => 
+              !records.some(r => r.workerId === wp.workerId && r.month === wp.month)
+          );
+          return [...filtered, ...records];
+      });
   };
 
   // --- Backup / Restore ---
@@ -174,6 +200,7 @@ function App() {
      if (data.executionData) setExecutionData(data.executionData);
      if (data.messEntries) setMessEntries(data.messEntries);
      if (data.workerPayments) setWorkerPayments(data.workerPayments);
+     alert('Data restored successfully!');
   };
 
   const renderContent = () => {
